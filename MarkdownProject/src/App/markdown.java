@@ -13,12 +13,12 @@ import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 
 public class markdown {
-	private JFrame frame;
-    private JTextArea textArea;
-    private JPanel panel;
-    private JButton exportTxtButton;
-    private JButton exportPdfButton;
-    private JEditorPane editorPane;
+	JFrame frame;
+    JTextArea textArea;
+    JPanel panel;
+    JButton exportTxtButton;
+    JButton exportPdfButton;
+    JEditorPane editorPane;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -31,15 +31,14 @@ public class markdown {
     }
 
     public void createUI() {
-    	
         frame = new JFrame("Markdown Note");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 500);
         frame.setLayout(new BorderLayout());
         frame.getContentPane().setBackground(new Color(253, 253, 220)); // Very light pale yellow
-        
+
         ImageIcon icon = new ImageIcon("C:/Users/Admin/git/repository4/Test/note.png"); // Load your custom icon
-    	frame.setIconImage(icon.getImage()); // Set it to the frame
+        frame.setIconImage(icon.getImage()); // Set it to the frame
 
         // Create a split layout
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
@@ -95,9 +94,27 @@ public class markdown {
         buttonPanel.add(exportTxtButton);
         buttonPanel.add(exportPdfButton);
 
+        // JFileChooser for file selection
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save File");
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        
         // Button Actions
-        exportTxtButton.addActionListener(e -> exportToFile("txt"));
-        exportPdfButton.addActionListener(e -> exportToFile("pdf"));
+        exportTxtButton.addActionListener(e -> {
+            int result = fileChooser.showSaveDialog(frame);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File fileToSave = fileChooser.getSelectedFile();
+                exportToFile("txt", fileToSave);
+            }
+        });
+        
+        exportPdfButton.addActionListener(e -> {
+            int result = fileChooser.showSaveDialog(frame);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File fileToSave = fileChooser.getSelectedFile();
+                exportToFile("pdf", fileToSave);
+            }
+        });
 
         splitPane.setLeftComponent(new JScrollPane(textArea));
         splitPane.setRightComponent(new JScrollPane(panel));
@@ -107,6 +124,7 @@ public class markdown {
 
         frame.setVisible(true);
     }
+
 
     public void renderMarkdown() {
         String markdownText = textArea.getText();
@@ -129,44 +147,29 @@ public class markdown {
         panel.repaint();
     }
 
-    private void exportToFile(String format) {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Save as " + format);
-        int userSelection = fileChooser.showSaveDialog(frame);
+    public void exportToFile(String format, File fileToSave) {
+        if (fileToSave == null) return; // Prevent NullPointerException
 
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
-            File fileToSave = fileChooser.getSelectedFile();
-            if (format.equals("txt")) {
-                try (BufferedWriter bf = new BufferedWriter(new FileWriter(fileToSave + ".txt"))) {
-                    bf.write(textArea.getText());
-                    JOptionPane.showMessageDialog(frame, "File saved successfully!");
-                } catch (IOException e) {
-                    JOptionPane.showMessageDialog(frame, "Error saving file.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            } else if (format.equals("pdf")) {
-				/*
-				 * // Parse markdown using CommonMark Parser parser = Parser.builder().build();
-				 * org.commonmark.node.Node document = parser.parse(textArea.getText());
-				 * 
-				 * // Convert markdown to HTML HtmlRenderer renderer =
-				 * HtmlRenderer.builder().build(); String htmlContent =
-				 * renderer.render(document);
-				 */
-            	
-            	String htmlContent = editorPane.getText();
-
-                // Convert HTML to PDF using XMLWorkerHelper
-                Document pdfDocument = new Document();
-                try {
-                    PdfWriter writer = PdfWriter.getInstance(pdfDocument, new FileOutputStream(fileToSave + ".pdf"));
-                    pdfDocument.open();
-                    XMLWorkerHelper.getInstance().parseXHtml(writer, pdfDocument, new StringReader(htmlContent));
-                    pdfDocument.close();
-                    JOptionPane.showMessageDialog(frame, "PDF saved successfully!");
-                } catch (DocumentException | IOException e) {
-                    JOptionPane.showMessageDialog(frame, "Error saving PDF.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
+        if (format.equals("txt")) {
+            try (BufferedWriter bf = new BufferedWriter(new FileWriter(fileToSave))) {
+                bf.write(textArea.getText());
+                JOptionPane.showMessageDialog(frame, "File saved successfully!");
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(frame, "Error saving file.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } else if (format.equals("pdf")) {
+            String htmlContent = editorPane.getText();
+            Document pdfDocument = new Document();
+            try {
+                PdfWriter writer = PdfWriter.getInstance(pdfDocument, new FileOutputStream(fileToSave));
+                pdfDocument.open();
+                XMLWorkerHelper.getInstance().parseXHtml(writer, pdfDocument, new StringReader(htmlContent));
+                pdfDocument.close();
+                JOptionPane.showMessageDialog(frame, "PDF saved successfully!");
+            } catch (DocumentException | IOException e) {
+                JOptionPane.showMessageDialog(frame, "Error saving PDF.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
+
 }
